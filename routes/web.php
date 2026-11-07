@@ -256,6 +256,21 @@ HTML;
     \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
 ]);
 
+Route::get('/clear-cache', function (\Illuminate\Http\Request $request) {
+    if ($request->query('key') !== 'ArkleDrive2026') {
+        abort(403, 'Unauthorized. Please provide ?key=ArkleDrive2026');
+    }
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">All Laravel caches cleared successfully! (config, cache, route, view)</pre>');
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+]);
+
 /*
 |--------------------------------------------------------------------------
 | One-time Web Migration Helper (For Shared Hosting without SSH access)
@@ -267,6 +282,11 @@ Route::get('/migrate-db', function (\Illuminate\Http\Request $request) {
     }
 
     try {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('config:clear');
+            \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        } catch (\Throwable) {}
+
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         $migrateOut = \Illuminate\Support\Facades\Artisan::output();
 
@@ -287,6 +307,21 @@ Route::get('/migrate-db', function (\Illuminate\Http\Request $request) {
             . "\n\nPlease check your DB credentials in .env and make sure DB_HOST=localhost"
             . '</pre>', 500);
     }
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+]);
+
+Route::get('/clear-cache', function (\Illuminate\Http\Request $request) {
+    if ($request->query('key') !== 'ArkleDrive2026') {
+        abort(403, 'Unauthorized. Please provide ?key=ArkleDrive2026');
+    }
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">All Laravel caches cleared successfully! (config, cache, route, view)</pre>');
 })->withoutMiddleware([
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\View\Middleware\ShareErrorsFromSession::class,
