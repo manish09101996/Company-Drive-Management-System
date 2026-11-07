@@ -15,6 +15,39 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
+| One-time Web Migration Helper (For Shared Hosting without SSH access)
+|--------------------------------------------------------------------------
+*/
+Route::get('/migrate-db', function (\Illuminate\Http\Request $request) {
+    if ($request->query('key') !== 'ArkleDrive2026') {
+        abort(403, 'Unauthorized. Please provide ?key=ArkleDrive2026');
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrateOut = \Illuminate\Support\Facades\Artisan::output();
+
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        $seedOut = \Illuminate\Support\Facades\Artisan::output();
+
+        return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;line-height:1.5;">'
+            . "=============================================\n"
+            . "  ARKLE HOMES DRIVE - DATABASE SETUP SUCCESS\n"
+            . "=============================================\n\n"
+            . e($migrateOut)
+            . "\n" . e($seedOut)
+            . "\n\n<a href='/login' style='color:#38bdf8;font-weight:bold;font-size:16px;text-decoration:underline;'>&rarr; Click here to Login to Arkle Homes Drive</a>"
+            . '</pre>');
+    } catch (\Throwable $e) {
+        return response('<pre style="background:#0f172a;color:#f87171;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;line-height:1.5;">'
+            . "DATABASE SETUP ERROR:\n" . e($e->getMessage())
+            . "\n\nPlease check your DB credentials in .env and make sure DB_HOST=localhost"
+            . '</pre>', 500);
+    }
+})->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class]);
+
+/*
+|--------------------------------------------------------------------------
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
