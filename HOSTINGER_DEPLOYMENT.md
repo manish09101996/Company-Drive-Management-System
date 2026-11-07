@@ -110,13 +110,13 @@ php artisan view:cache
 
 When `db:seed` is executed, the following default accounts are provisioned:
 
-| Role | Name | Email | Default Password | Access Level |
+| Role / Designation | Name | Email | Default Password | Access Level |
 | :--- | :--- | :--- | :--- | :--- |
 | **Super Admin** | Arkle Homes Admin | `admin@arklehomes.com.au` | `Admin@12345` | Unrestricted full system, user, and storage control |
-| **Admin** | SK Mann | `skmann@arklehomes.com.au` | `Admin@12345` | Full administrative operations, drive, and user management |
-| **Manager** | Garima | `garima@arklehomes.com.au` | `Admin@12345` | Departmental folders, file versioning, and sharing |
-| **Employee** | Ishan | `ishan@arklehomes.com.au` | `Admin@12345` | View, upload, and download assigned company files |
-| **Employee** | Sean | `sean@arklehomes.com.au` | `Admin@12345` | View, upload, and download assigned company files |
+| **CEO** | Garima | `garima@arklehomes.com.au` | `Admin@12345` | Chief Executive Officer - Executive leadership & drive control |
+| **Director** | Ishan | `ishan@arklehomes.com.au` | `Admin@12345` | Director - Operational management & drive oversight |
+| **Team Member** | SK Mann | `skmann@arklehomes.com.au` | `Admin@12345` | Dedicated workspace & company file collaboration |
+| **Team Member** | Sean | `sean@arklehomes.com.au` | `Admin@12345` | Dedicated workspace & company file collaboration |
 
 > **IMPORTANT**: Log in immediately upon deployment and update the Super Admin password via **Profile** &rarr; **Change Password**.
 

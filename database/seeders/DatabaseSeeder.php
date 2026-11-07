@@ -44,6 +44,18 @@ class DatabaseSeeder extends Seeder
                 'is_system' => true,
             ],
             [
+                'name' => 'CEO',
+                'slug' => 'ceo',
+                'description' => 'Chief Executive Officer - Executive leadership and operational oversight',
+                'is_system' => true,
+            ],
+            [
+                'name' => 'Director',
+                'slug' => 'director',
+                'description' => 'Director - Executive leadership, operations, and departmental management',
+                'is_system' => true,
+            ],
+            [
                 'name' => 'Admin',
                 'slug' => 'admin',
                 'description' => 'Manage company files, users, imports, audit logs and standard administrative operations',
@@ -56,7 +68,7 @@ class DatabaseSeeder extends Seeder
                 'is_system' => true,
             ],
             [
-                'name' => 'Employee',
+                'name' => 'Team Member',
                 'slug' => 'employee',
                 'description' => 'Standard user access to view, upload, download assigned company files and folders',
                 'is_system' => true,
@@ -65,7 +77,7 @@ class DatabaseSeeder extends Seeder
 
         $roleModels = [];
         foreach ($roles as $role) {
-            $roleModels[$role['slug']] = Role::firstOrCreate(['slug' => $role['slug']], $role);
+            $roleModels[$role['slug']] = Role::updateOrCreate(['slug' => $role['slug']], $role);
         }
 
         // 3. Permissions
@@ -108,15 +120,17 @@ class DatabaseSeeder extends Seeder
         // Super Admin gets all permissions
         $roleModels['super-admin']->permissions()->sync(collect($permissionModels)->pluck('id'));
 
-        // Admin gets almost all permissions except roles.manage and settings.manage (reserved for super admin)
+        // Executive / Admin permissions (Executive leadership, operations, file management, users, imports, audit)
         $adminPermSlugs = [
             'files.view', 'files.upload', 'files.download', 'files.edit', 'files.rename', 'files.move',
             'files.delete', 'files.restore', 'files.share', 'folders.create', 'folders.rename',
             'folders.move', 'folders.delete', 'users.manage', 'imports.manage', 'audit.view'
         ];
-        $roleModels['admin']->permissions()->sync(
-            collect($permissionModels)->whereIn('slug', $adminPermSlugs)->pluck('id')
-        );
+        $execPermissionIds = collect($permissionModels)->whereIn('slug', $adminPermSlugs)->pluck('id');
+
+        $roleModels['ceo']->permissions()->sync($execPermissionIds);
+        $roleModels['director']->permissions()->sync($execPermissionIds);
+        $roleModels['admin']->permissions()->sync($execPermissionIds);
 
         // Manager gets departmental management permissions
         $managerPermSlugs = [
@@ -127,7 +141,7 @@ class DatabaseSeeder extends Seeder
             collect($permissionModels)->whereIn('slug', $managerPermSlugs)->pluck('id')
         );
 
-        // Employee gets standard operational permissions
+        // Team Member (Employee) gets standard operational permissions
         $employeePermSlugs = [
             'files.view', 'files.upload', 'files.download', 'folders.create'
         ];
@@ -138,17 +152,17 @@ class DatabaseSeeder extends Seeder
         // 5. Create Arkle Homes Team Accounts (Exclusively)
         $allowedEmails = [
             'admin@arklehomes.com.au',
-            'skmann@arklehomes.com.au',
             'garima@arklehomes.com.au',
             'ishan@arklehomes.com.au',
+            'skmann@arklehomes.com.au',
             'sean@arklehomes.com.au',
         ];
 
         // Purge any placeholder or legacy demo users
         User::whereNotIn('email', $allowedEmails)->forceDelete();
 
-        // 1. Super Admin: admin@arklehomes.com.au
-        $superAdmin = User::firstOrCreate(
+        // 1. Super Admin: admin@arklehomes.com.au (Super Admin)
+        $superAdmin = User::updateOrCreate(
             ['email' => 'admin@arklehomes.com.au'],
             [
                 'name' => 'Arkle Homes Admin',
@@ -161,8 +175,36 @@ class DatabaseSeeder extends Seeder
         );
         $superAdmin->roles()->sync([$roleModels['super-admin']->id, $roleModels['admin']->id]);
 
-        // 2. SK Mann: skmann@arklehomes.com.au (Admin / Director)
-        $skmann = User::firstOrCreate(
+        // 2. Garima: garima@arklehomes.com.au (CEO)
+        $garima = User::updateOrCreate(
+            ['email' => 'garima@arklehomes.com.au'],
+            [
+                'name' => 'Garima',
+                'password' => Hash::make('Admin@12345'),
+                'department_id' => $deptModels['EXEC']->id,
+                'status' => 'active',
+                'phone' => '+61 400 000 003',
+                'email_verified_at' => now(),
+            ]
+        );
+        $garima->roles()->sync([$roleModels['ceo']->id]);
+
+        // 3. Ishan: ishan@arklehomes.com.au (Director)
+        $ishan = User::updateOrCreate(
+            ['email' => 'ishan@arklehomes.com.au'],
+            [
+                'name' => 'Ishan',
+                'password' => Hash::make('Admin@12345'),
+                'department_id' => $deptModels['EXEC']->id,
+                'status' => 'active',
+                'phone' => '+61 400 000 004',
+                'email_verified_at' => now(),
+            ]
+        );
+        $ishan->roles()->sync([$roleModels['director']->id]);
+
+        // 4. SK Mann: skmann@arklehomes.com.au (Team Member)
+        $skmann = User::updateOrCreate(
             ['email' => 'skmann@arklehomes.com.au'],
             [
                 'name' => 'SK Mann',
@@ -173,38 +215,10 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-        $skmann->roles()->sync([$roleModels['admin']->id]);
-
-        // 3. Garima: garima@arklehomes.com.au (Manager)
-        $garima = User::firstOrCreate(
-            ['email' => 'garima@arklehomes.com.au'],
-            [
-                'name' => 'Garima',
-                'password' => Hash::make('Admin@12345'),
-                'department_id' => $deptModels['FIN']->id,
-                'status' => 'active',
-                'phone' => '+61 400 000 003',
-                'email_verified_at' => now(),
-            ]
-        );
-        $garima->roles()->sync([$roleModels['manager']->id]);
-
-        // 4. Ishan: ishan@arklehomes.com.au (Team Member)
-        $ishan = User::firstOrCreate(
-            ['email' => 'ishan@arklehomes.com.au'],
-            [
-                'name' => 'Ishan',
-                'password' => Hash::make('Admin@12345'),
-                'department_id' => $deptModels['IT']->id,
-                'status' => 'active',
-                'phone' => '+61 400 000 004',
-                'email_verified_at' => now(),
-            ]
-        );
-        $ishan->roles()->sync([$roleModels['employee']->id]);
+        $skmann->roles()->sync([$roleModels['employee']->id]);
 
         // 5. Sean: sean@arklehomes.com.au (Team Member)
-        $sean = User::firstOrCreate(
+        $sean = User::updateOrCreate(
             ['email' => 'sean@arklehomes.com.au'],
             [
                 'name' => 'Sean',

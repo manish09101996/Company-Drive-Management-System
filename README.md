@@ -107,13 +107,13 @@ Designed specifically to handle **10–50 GB Google Takeout exports** safely on 
 
 ## Seeded Arkle Homes Accounts
 
-| Name | Role | Email | Default Password |
+| Name | Role / Designation | Email | Default Password |
 | :--- | :--- | :--- | :--- |
-| **Arkle Homes Admin** | **Super Admin & Admin** | `admin@arklehomes.com.au` | `Admin@12345` |
-| **SK Mann** | **Admin** | `skmann@arklehomes.com.au` | `Admin@12345` |
-| **Garima** | **Manager** | `garima@arklehomes.com.au` | `Admin@12345` |
-| **Ishan** | **Employee** | `ishan@arklehomes.com.au` | `Admin@12345` |
-| **Sean** | **Employee** | `sean@arklehomes.com.au` | `Admin@12345` |
+| **Arkle Homes Admin** | **Super Admin** | `admin@arklehomes.com.au` | `Admin@12345` |
+| **Garima** | **CEO** | `garima@arklehomes.com.au` | `Admin@12345` |
+| **Ishan** | **Director** | `ishan@arklehomes.com.au` | `Admin@12345` |
+| **SK Mann** | **Team Member** | `skmann@arklehomes.com.au` | `Admin@12345` |
+| **Sean** | **Team Member** | `sean@arklehomes.com.au` | `Admin@12345` |
 
 ---
 

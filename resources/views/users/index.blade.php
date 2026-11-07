@@ -92,8 +92,11 @@
                                 @php
                                     $roleBadge = match($role->slug) {
                                         'super-admin' => 'bg-danger-subtle text-danger border border-danger-subtle',
+                                        'ceo' => 'bg-dark text-white border border-dark fw-bold',
+                                        'director' => 'bg-primary-subtle text-primary border border-primary-subtle fw-semibold',
                                         'admin' => 'bg-primary-subtle text-primary border border-primary-subtle',
                                         'manager' => 'bg-info-subtle text-info border border-info-subtle',
+                                        'employee' => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
                                         default => 'bg-light text-secondary border'
                                     };
                                 @endphp
