@@ -96,14 +96,58 @@ Route::match(['GET', 'POST'], '/db-status', function (\Illuminate\Http\Request $
                 &#10004; CURRENT .ENV CREDENTIALS CONNECTED SUCCESSFULLY!
             </div>";
         } catch (\Throwable $e) {
+            // Attempt auto-detection across common Hostinger variations (e.g. prefixing 'u', switching localhost/127.0.0.1)
+            $suggested = null;
+            if ($password) {
+                $userVars = array_unique([$username, 'u' . ltrim($username, 'u'), ltrim($username, 'u')]);
+                $dbVars = array_unique([$database, 'u' . ltrim($database, 'u'), ltrim($database, 'u')]);
+                $hostVars = ['localhost', '127.0.0.1'];
+
+                foreach ($hostVars as $h) {
+                    foreach ($dbVars as $d) {
+                        foreach ($userVars as $u) {
+                            if ($h === $host && $d === $database && $u === $username) continue;
+                            try {
+                                $altPdo = new \PDO("mysql:host={$h};port={$port};dbname={$d};charset=utf8mb4", $u, $password, [
+                                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                                    \PDO::ATTR_TIMEOUT => 2,
+                                ]);
+                                $suggested = ['host' => $h, 'database' => $d, 'username' => $u];
+                                break 3;
+                            } catch (\Throwable) {}
+                        }
+                    }
+                }
+            }
+
+            $suggestionHtml = '';
+            if ($suggested) {
+                $suggestionHtml = "<div style='background:#1e3a8a;color:#bfdbfe;padding:14px;border-radius:6px;margin-top:14px;'>
+                    <strong>&#9889; AUTO-DETECTED WORKING CREDENTIALS!</strong><br>
+                    Host: <code>{$suggested['host']}</code><br>
+                    Database: <code>{$suggested['database']}</code><br>
+                    Username: <code>{$suggested['username']}</code><br><br>
+                    <form method='POST' action='/db-status' style='display:inline;'>
+                        <input type='hidden' name='key' value='ArkleDrive2026'>
+                        <input type='hidden' name='host' value='{$suggested['host']}'>
+                        <input type='hidden' name='port' value='{$port}'>
+                        <input type='hidden' name='database' value='{$suggested['database']}'>
+                        <input type='hidden' name='username' value='{$suggested['username']}'>
+                        <input type='hidden' name='password' value='" . htmlspecialchars($password) . "'>
+                        <input type='hidden' name='save_env' value='1'>
+                        <button type='submit' style='background:#38bdf8;color:#0f172a;font-weight:bold;padding:8px 16px;border:0;border-radius:4px;cursor:pointer;'>Apply These Working Credentials to .env Now</button>
+                    </form>
+                </div>";
+            }
+
             $message = "<div style='background:#7f1d1d;color:#fca5a5;padding:16px;border-radius:6px;margin-bottom:20px;'>
                 &#10008; CURRENT .ENV CONNECTION FAILED:<br><br><strong>" . htmlspecialchars($e->getMessage()) . "</strong>
+                {$suggestionHtml}
                 <br><br>
-                <strong>Hostinger Troubleshooting:</strong>
+                <strong>Hostinger Database Troubleshooting:</strong>
                 <ul style='margin:8px 0 0 20px;line-height:1.6;'>
-                    <li>Check if the database user password matches what you set in Hostinger hPanel &rarr; Databases.</li>
-                    <li>If you forgot the database password in Hostinger, click <strong>...</strong> (three dots) next to the database &rarr; <strong>Change Password</strong>, then test it below.</li>
-                    <li>Make sure <strong>DB_HOST=localhost</strong> in Hostinger.</li>
+                    <li>Open <strong>Hostinger hPanel &rarr; Databases</strong> to view your exact <strong>MySQL Database</strong> and <strong>MySQL User</strong> name (Hostinger often prefixes them with <code>u</code>, e.g. <code>u371849684_companyDrive</code>).</li>
+                    <li>If you don't know the password, click <strong>...</strong> (three dots) next to the database &rarr; <strong>Change Password</strong>, set a password (e.g. <code>ArkleDrive2026</code>), then enter it in the form below.</li>
                 </ul>
             </div>";
         }
