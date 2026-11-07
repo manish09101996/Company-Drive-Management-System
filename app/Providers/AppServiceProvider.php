@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(ImportJob::class, ImportJobPolicy::class);
 
-        // Safe fallback for session driver to prevent 500 crashes on shared hosting before database tables are created
+        // Safe fallback for session and cache drivers to prevent 500 crashes on shared hosting before database tables are created
         if (config('session.driver') === 'database') {
             try {
                 if (!\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
@@ -41,6 +41,16 @@ class AppServiceProvider extends ServiceProvider
                 }
             } catch (\Throwable $e) {
                 config(['session.driver' => 'file']);
+            }
+        }
+
+        if (config('cache.default') === 'database') {
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('cache')) {
+                    config(['cache.default' => 'file']);
+                }
+            } catch (\Throwable $e) {
+                config(['cache.default' => 'file']);
             }
         }
     }

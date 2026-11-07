@@ -30,42 +30,56 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
+        try {
+            $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
 
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
-            AuditLogService::logLogin($request->email, false, null, "Rate limit exceeded. Locked for {$seconds}s");
+            if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+                $seconds = RateLimiter::availableIn($throttleKey);
+                try {
+                    AuditLogService::logLogin($request->email, false, null, "Rate limit exceeded. Locked for {$seconds}s");
+                } catch (\Throwable) {}
+                return back()->withErrors([
+                    'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
+                ]);
+            }
+
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                RateLimiter::hit($throttleKey, 300);
+                try {
+                    AuditLogService::logLogin($request->email, false, $user, 'Invalid credentials');
+                } catch (\Throwable) {}
+                return back()->withErrors([
+                    'email' => 'The provided credentials do not match our records.',
+                ])->onlyInput('email');
+            }
+
+            if (!$user->isActive()) {
+                try {
+                    AuditLogService::logLogin($request->email, false, $user, 'Account deactivated');
+                } catch (\Throwable) {}
+                return back()->withErrors([
+                    'email' => 'Your account has been deactivated. Please contact an administrator.',
+                ]);
+            }
+
+            RateLimiter::clear($throttleKey);
+
+            Auth::login($user, $request->boolean('remember'));
+            $request->session()->regenerate();
+
+            try {
+                AuditLogService::logLogin($user->email, true, $user);
+                AuditLogService::log('user.login', 'User', $user->id, ['ip' => $request->ip()]);
+            } catch (\Throwable) {}
+
+            return redirect()->intended(route('admin.dashboard'));
+        } catch (\Illuminate\Database\QueryException $e) {
             return back()->withErrors([
-                'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
-            ]);
-        }
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            RateLimiter::hit($throttleKey, 300);
-            AuditLogService::logLogin($request->email, false, $user, 'Invalid credentials');
-            return back()->withErrors([
-                'email' => 'The provided credentials do not match our records.',
+                'email' => 'Database connection error: ' . $e->getMessage() . ' - Please check database credentials in your Hostinger .env file.',
             ])->onlyInput('email');
         }
-
-        if (!$user->isActive()) {
-            AuditLogService::logLogin($request->email, false, $user, 'Account deactivated');
-            return back()->withErrors([
-                'email' => 'Your account has been deactivated. Please contact an administrator.',
-            ]);
-        }
-
-        RateLimiter::clear($throttleKey);
-
-        Auth::login($user, $request->boolean('remember'));
-        $request->session()->regenerate();
-
-        AuditLogService::logLogin($user->email, true, $user);
-        AuditLogService::log('user.login', 'User', $user->id, ['ip' => $request->ip()]);
-
-        return redirect()->intended(route('admin.dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse

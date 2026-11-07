@@ -41,4 +41,12 @@ class ExampleTest extends TestCase
         $response->assertSee('3.18 GB');
         $response->assertSee('Server Free:');
     }
+
+    public function test_db_status_endpoint_renders_diagnostic_screen(): void
+    {
+        $response = $this->get('/db-status?key=ArkleDrive2026');
+
+        $response->assertStatus(200);
+        $response->assertSee('Database Diagnostic');
+    }
 }
