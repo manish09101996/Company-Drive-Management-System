@@ -32,5 +32,16 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Folder::class, FolderPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(ImportJob::class, ImportJobPolicy::class);
+
+        // Safe fallback for session driver to prevent 500 crashes on shared hosting before database tables are created
+        if (config('session.driver') === 'database') {
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
+                    config(['session.driver' => 'file']);
+                }
+            } catch (\Throwable $e) {
+                config(['session.driver' => 'file']);
+            }
+        }
     }
 }
