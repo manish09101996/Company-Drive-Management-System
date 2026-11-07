@@ -90,7 +90,7 @@
                     <label for="email" class="form-label small fw-semibold text-secondary">Work Email</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
-                        <input type="email" class="form-control border-start-0 ps-0" id="email" name="email" value="{{ old('email', 'admin@arklehomes.com.au') }}" required autofocus placeholder="name@arklehomes.com.au">
+                        <input type="email" class="form-control border-start-0 ps-0" id="email" name="email" value="{{ old('email') }}" required autofocus placeholder="name@arklehomes.com.au">
                     </div>
                 </div>
 
@@ -100,7 +100,7 @@
                     </div>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock"></i></span>
-                        <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" value="Admin@12345" required placeholder="••••••••">
+                        <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" required placeholder="••••••••">
                     </div>
                 </div>
 
@@ -114,16 +114,8 @@
                 </button>
             </form>
 
-            <div class="mt-4 pt-3 border-top text-center">
-                <div class="text-muted small mb-2 fw-semibold">Arkle Homes Team Accounts:</div>
-                <div class="badge bg-light text-dark border p-2 text-start font-monospace small w-100 mb-1" style="font-size: 0.72rem; line-height: 1.5;">
-                    <div><strong>Admin:</strong> admin@arklehomes.com.au</div>
-                    <div><strong>SK Mann:</strong> skmann@arklehomes.com.au</div>
-                    <div><strong>Garima:</strong> garima@arklehomes.com.au</div>
-                    <div><strong>Ishan:</strong> ishan@arklehomes.com.au</div>
-                    <div><strong>Sean:</strong> sean@arklehomes.com.au</div>
-                    <div class="border-top mt-1 pt-1 text-primary"><strong>Default Password:</strong> Admin@12345</div>
-                </div>
+            <div class="mt-4 pt-3 border-top text-center text-muted small" style="font-size: 0.75rem;">
+                <i class="bi bi-shield-lock-fill text-success me-1"></i> End-to-end authorized enterprise storage
             </div>
         </div>
     </div>
