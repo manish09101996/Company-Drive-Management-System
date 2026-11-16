@@ -37,23 +37,45 @@ class TakeoutImportController extends Controller
     {
         $this->authorize('viewAny', ImportJob::class);
 
-        $jobs = ImportJob::with(['creator', 'destinationFolder'])
-            ->orderBy('id', 'desc')
-            ->paginate(10);
+        $user = Auth::user();
+        $isManager = $user->isSuperAdmin() || $user->hasPermission('imports.manage');
+
+        $jobsQuery = ImportJob::with(['creator', 'destinationFolder'])
+            ->orderBy('id', 'desc');
+
+        if (!$isManager) {
+            $jobsQuery->where('created_by', $user->id);
+        }
+
+        $jobs = $jobsQuery->paginate(10);
 
         $storageStats = $this->storageService->getStorageStats();
-        $folders = Folder::orderBy('name')->get(['id', 'name', 'parent_id', 'uuid']);
+
+        if ($user->isSuperAdmin()) {
+            $folders = Folder::orderBy('name')->get(['id', 'name', 'parent_id', 'uuid']);
+        } else {
+            $assignedFolderIds = Folder::where('assigned_user_id', $user->id)->pluck('id')->toArray();
+            $folders = Folder::whereIn('id', $assignedFolderIds)
+                ->orWhere('assigned_user_id', $user->id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'parent_id', 'uuid']);
+        }
+
         $roles = Role::orderBy('name')->get();
 
-        $existingZipFiles = File::where('extension', 'zip')
-            ->orWhere('name', 'like', '%.zip')
-            ->with(['folder', 'uploader'])
-            ->orderBy('id', 'desc')
-            ->get()
-            ->map(function ($file) {
-                $file->import_job = ImportJob::where('archive_path', $file->storage_path)->latest()->first();
-                return $file;
-            });
+        $zipQuery = File::where(function ($q) {
+            $q->where('extension', 'zip')
+              ->orWhere('name', 'like', '%.zip');
+        })->with(['folder', 'uploader'])->orderBy('id', 'desc');
+
+        if (!$isManager) {
+            $zipQuery->where('uploaded_by', $user->id);
+        }
+
+        $existingZipFiles = $zipQuery->get()->map(function ($file) {
+            $file->import_job = ImportJob::where('archive_path', $file->storage_path)->latest()->first();
+            return $file;
+        });
 
         return view('imports.index', compact('jobs', 'storageStats', 'folders', 'roles', 'existingZipFiles'));
     }

@@ -135,7 +135,7 @@ class DatabaseSeeder extends Seeder
         // Manager gets departmental management permissions
         $managerPermSlugs = [
             'files.view', 'files.upload', 'files.download', 'files.edit', 'files.rename', 'files.move',
-            'files.delete', 'files.restore', 'files.share', 'folders.create', 'folders.rename'
+            'files.delete', 'files.restore', 'files.share', 'folders.create', 'folders.rename', 'imports.manage'
         ];
         $roleModels['manager']->permissions()->sync(
             collect($permissionModels)->whereIn('slug', $managerPermSlugs)->pluck('id')
@@ -143,7 +143,7 @@ class DatabaseSeeder extends Seeder
 
         // Team Member (Employee) gets standard operational permissions
         $employeePermSlugs = [
-            'files.view', 'files.upload', 'files.download', 'folders.create'
+            'files.view', 'files.upload', 'files.download', 'folders.create', 'imports.manage'
         ];
         $roleModels['employee']->permissions()->sync(
             collect($permissionModels)->whereIn('slug', $employeePermSlugs)->pluck('id')

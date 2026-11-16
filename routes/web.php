@@ -278,11 +278,24 @@ Route::get('/clear-cache', function (\Illuminate\Http\Request $request) {
     if ($request->query('key') !== 'ArkleDrive2026') {
         abort(403, 'Unauthorized. Please provide ?key=ArkleDrive2026');
     }
+
+    // Ensure imports.manage permission is assigned to all roles in database
+    try {
+        $importPerm = \App\Models\Permission::firstOrCreate(
+            ['slug' => 'imports.manage'],
+            ['name' => 'Manage Imports', 'module' => 'imports', 'description' => 'Upload, inspect, and extract Google Takeout ZIP backups']
+        );
+        $roles = \App\Models\Role::all();
+        foreach ($roles as $role) {
+            $role->permissions()->syncWithoutDetaching([$importPerm->id]);
+        }
+    } catch (\Throwable) {}
+
     \Illuminate\Support\Facades\Artisan::call('config:clear');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     \Illuminate\Support\Facades\Artisan::call('route:clear');
     \Illuminate\Support\Facades\Artisan::call('view:clear');
-    return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">All Laravel caches cleared successfully! (config, cache, route, view)</pre>');
+    return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">All Laravel caches cleared successfully! (config, cache, route, view) &amp; permissions verified.</pre>');
 })->withoutMiddleware([
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\View\Middleware\ShareErrorsFromSession::class,

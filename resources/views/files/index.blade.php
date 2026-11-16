@@ -53,10 +53,12 @@
 
     <!-- Quick Actions -->
     <div class="d-flex flex-wrap gap-2">
-        @if(auth()->user()->isSuperAdmin())
+        @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('imports.manage') || auth()->user()->hasPermission('files.upload'))
         <a href="{{ route('imports.index') }}" class="btn btn-dark d-inline-flex align-items-center gap-1 shadow-sm">
             <i class="bi bi-box-arrow-in-down"></i> Import Takeout ZIP
         </a>
+        @endif
+        @if(auth()->user()->isSuperAdmin())
         <button class="btn btn-outline-primary d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#newFolderModal">
             <i class="bi bi-folder-plus"></i> New Folder
         </button>

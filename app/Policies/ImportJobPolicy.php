@@ -17,34 +17,42 @@ class ImportJobPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isSuperAdmin() || $user->hasPermission('imports.manage');
+        return $user->isActive();
     }
 
     public function view(User $user, ImportJob $job): bool
     {
-        return $user->isSuperAdmin() 
+        return $user->isActive() && (
+            $user->isSuperAdmin() 
             || $user->hasPermission('imports.manage')
-            || $job->created_by === $user->id;
+            || $job->created_by === $user->id
+        );
     }
 
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin() 
+        return $user->isActive() && (
+            $user->isSuperAdmin() 
             || $user->hasPermission('imports.manage')
-            || $user->hasPermission('files.upload');
+            || $user->hasPermission('files.upload')
+        );
     }
 
     public function update(User $user, ImportJob $job): bool
     {
-        return $user->isSuperAdmin() 
+        return $user->isActive() && (
+            $user->isSuperAdmin() 
             || $user->hasPermission('imports.manage')
-            || $job->created_by === $user->id;
+            || $job->created_by === $user->id
+        );
     }
 
     public function delete(User $user, ImportJob $job): bool
     {
-        return $user->isSuperAdmin() 
+        return $user->isActive() && (
+            $user->isSuperAdmin() 
             || $user->hasPermission('imports.manage')
-            || $job->created_by === $user->id;
+            || $job->created_by === $user->id
+        );
     }
 }
