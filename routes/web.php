@@ -92,9 +92,18 @@ Route::match(['GET', 'POST'], '/db-status', function (\Illuminate\Http\Request $
             $stmt = $pdo->query('SHOW TABLES');
             $tables = $stmt->fetchAll(\PDO::FETCH_COLUMN);
             $connected = true;
+
+            $usersStmt = $pdo->query('SELECT u.id, u.name, u.email, GROUP_CONCAT(r.slug) as roles FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id GROUP BY u.id, u.name, u.email');
+            $userRows = $usersStmt ? $usersStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
+            $userListHtml = '<div style="margin-top:16px;"><strong style="color:#38bdf8;">Users & Roles in Database:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
+            foreach ($userRows as $ur) {
+                $userListHtml .= "<li>ID {$ur['id']}: <strong>{$ur['name']}</strong> ({$ur['email']}) &mdash; Roles: <code>" . ($ur['roles'] ?: 'NONE') . "</code></li>";
+            }
+            $userListHtml .= '</ul></div>';
+
             $message = "<div style='background:#065f46;color:#a7f3d0;padding:16px;border-radius:6px;margin-bottom:20px;font-weight:bold;'>
                 &#10004; CURRENT .ENV CREDENTIALS CONNECTED SUCCESSFULLY!
-            </div>";
+            </div>" . $userListHtml;
         } catch (\Throwable $e) {
             // Attempt auto-detection across common Hostinger variations (e.g. prefixing 'u', switching localhost/127.0.0.1)
             $suggested = null;
