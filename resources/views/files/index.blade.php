@@ -169,9 +169,23 @@
                         </a>
                     </div>
                     <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                        <span class="badge bg-light text-secondary border small" style="font-size: 0.7rem;">
-                            {{ $folder->files->count() }} {{ \Illuminate\Support\Str::plural('file', $folder->files->count()) }}
-                        </span>
+                        @php
+                            $subCount = $folder->children_count ?? $folder->children()->count();
+                            $fileCount = $folder->files->count();
+                        @endphp
+                        @if($subCount > 0 && $fileCount > 0)
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle small" style="font-size: 0.7rem;">
+                                {{ $subCount }} {{ \Illuminate\Support\Str::plural('folder', $subCount) }}, {{ $fileCount }} {{ \Illuminate\Support\Str::plural('file', $fileCount) }}
+                            </span>
+                        @elseif($subCount > 0)
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle small" style="font-size: 0.7rem;">
+                                <i class="bi bi-folder2 me-1"></i>{{ $subCount }} {{ \Illuminate\Support\Str::plural('folder', $subCount) }}
+                            </span>
+                        @else
+                            <span class="badge bg-light text-secondary border small" style="font-size: 0.7rem;">
+                                {{ $fileCount }} {{ \Illuminate\Support\Str::plural('file', $fileCount) }}
+                            </span>
+                        @endif
                     <div class="dropdown">
                         <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-three-dots-vertical"></i>
@@ -331,10 +345,17 @@
                         </div>
                         @endif
                     </div>
+                @elseif(($folder->children_count ?? $folder->children()->count()) > 0)
+                    @php $subCount = $folder->children_count ?? $folder->children()->count(); @endphp
+                    <div class="p-3 text-center text-muted small">
+                        <i class="bi bi-folder-symlink text-primary d-block fs-3 mb-1"></i>
+                        <span class="fw-semibold text-dark">{{ $subCount }} {{ \Illuminate\Support\Str::plural('subfolder', $subCount) }} inside</span>
+                        <div class="text-muted small mt-1">Contains nested folders & files &bull; Click <em>Open Folder &rarr;</em></div>
+                    </div>
                 @else
                     <div class="p-3 text-center text-muted small">
                         <i class="bi bi-folder2 text-secondary d-block fs-4 mb-1"></i>
-                        <span>No files in this folder</span>
+                        <span>Empty folder (0 files)</span>
                     </div>
                 @endif
             </div>

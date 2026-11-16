@@ -71,6 +71,7 @@ class FolderController extends Controller
 
                 $foldersQuery = Folder::whereIn('parent_id', $allowedFolderIds)
                     ->where('name', 'like', "%{$search}%")
+                    ->withCount('children')
                     ->with(['department', 'creator', 'assignedUser', 'files' => $fileTypeFilter]);
 
                 $filesQuery = File::whereIn('folder_id', $allowedFolderIds)
@@ -80,6 +81,7 @@ class FolderController extends Controller
                 // Global search across drive
                 if ($user->isSuperAdmin()) {
                     $foldersQuery = Folder::where('name', 'like', "%{$search}%")
+                        ->withCount('children')
                         ->with(['department', 'creator', 'assignedUser', 'files' => $fileTypeFilter]);
 
                     $filesQuery = File::where('name', 'like', "%{$search}%")
@@ -97,6 +99,7 @@ class FolderController extends Controller
 
                     $foldersQuery = Folder::whereIn('id', $allAllowedFolderIds)
                         ->where('name', 'like', "%{$search}%")
+                        ->withCount('children')
                         ->with(['department', 'creator', 'assignedUser', 'files' => $fileTypeFilter]);
 
                     $filesQuery = File::whereIn('folder_id', $allAllowedFolderIds)
@@ -108,6 +111,7 @@ class FolderController extends Controller
             // Standard directory listing of current folder level
             if ($currentFolder) {
                 $foldersQuery = Folder::where('parent_id', $currentFolder->id)
+                    ->withCount('children')
                     ->with(['department', 'creator', 'assignedUser', 'files' => $fileTypeFilter]);
 
                 $filesQuery = File::where('folder_id', $currentFolder->id)
@@ -117,6 +121,7 @@ class FolderController extends Controller
                 if ($user->isSuperAdmin()) {
                     // Super Admin sees all five main folders
                     $foldersQuery = Folder::whereNull('parent_id')
+                        ->withCount('children')
                         ->with(['department', 'creator', 'assignedUser', 'files' => $fileTypeFilter]);
 
                     $filesQuery = File::whereNull('folder_id')
@@ -125,6 +130,7 @@ class FolderController extends Controller
                     // Employees see ONLY their assigned folder
                     $foldersQuery = Folder::whereNull('parent_id')
                         ->where('assigned_user_id', $user->id)
+                        ->withCount('children')
                         ->with(['department', 'creator', 'assignedUser', 'files' => $fileTypeFilter]);
 
                     $filesQuery = File::whereRaw('1 = 0')
@@ -354,6 +360,12 @@ class FolderController extends Controller
             'deleted_at' => now(),
             'expires_at' => now()->addDays(30),
         ]);
+
+        // Soft-delete nested files & descendant folders so they don't remain as ghost items
+        $descendantFolderIds = $folder->getAllDescendantIds();
+        $allFolderIds = array_merge([$folder->id], $descendantFolderIds);
+        File::whereIn('folder_id', $allFolderIds)->delete();
+        Folder::whereIn('id', $descendantFolderIds)->delete();
 
         $folder->delete();
 

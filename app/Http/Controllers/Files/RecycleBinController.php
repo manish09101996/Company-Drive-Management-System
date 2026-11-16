@@ -75,6 +75,10 @@ class RecycleBinController extends Controller
                 if ($folder->parent_id && !Folder::where('id', $folder->parent_id)->exists()) {
                     $folder->parent_id = null;
                 }
+                $descendantFolderIds = $folder->getAllDescendantIds(true);
+                $allFolderIds = array_merge([$folder->id], $descendantFolderIds);
+                File::withTrashed()->whereIn('folder_id', $allFolderIds)->restore();
+                Folder::withTrashed()->whereIn('id', $descendantFolderIds)->restore();
                 $folder->restore();
             }
         }
@@ -110,6 +114,14 @@ class RecycleBinController extends Controller
         } elseif ($item->item_type === 'folder') {
             $folder = Folder::withTrashed()->find($item->item_id);
             if ($folder) {
+                $descendantFolderIds = $folder->getAllDescendantIds(true);
+                $allFolderIds = array_merge([$folder->id], $descendantFolderIds);
+                $files = File::withTrashed()->whereIn('folder_id', $allFolderIds)->get();
+                foreach ($files as $f) {
+                    $this->storageService->deletePhysicalFile($f->storage_path, $f->storage_disk);
+                    $f->forceDelete();
+                }
+                Folder::withTrashed()->whereIn('id', $descendantFolderIds)->forceDelete();
                 $folder->forceDelete();
             }
         }
@@ -146,6 +158,14 @@ class RecycleBinController extends Controller
             } elseif ($item->item_type === 'folder') {
                 $folder = Folder::withTrashed()->find($item->item_id);
                 if ($folder) {
+                    $descendantFolderIds = $folder->getAllDescendantIds(true);
+                    $allFolderIds = array_merge([$folder->id], $descendantFolderIds);
+                    $files = File::withTrashed()->whereIn('folder_id', $allFolderIds)->get();
+                    foreach ($files as $f) {
+                        $this->storageService->deletePhysicalFile($f->storage_path, $f->storage_disk);
+                        $f->forceDelete();
+                    }
+                    Folder::withTrashed()->whereIn('id', $descendantFolderIds)->forceDelete();
                     $folder->forceDelete();
                 }
             }

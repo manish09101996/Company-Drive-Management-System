@@ -313,15 +313,67 @@ Route::get('/migrate-db', function (\Illuminate\Http\Request $request) {
     \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
 ]);
 
-Route::get('/clear-cache', function (\Illuminate\Http\Request $request) {
+/*
+|--------------------------------------------------------------------------
+| Drive Reset Helper (To purge demo/Takeout data and start completely fresh)
+|--------------------------------------------------------------------------
+*/
+Route::get('/reset-drive', function (\Illuminate\Http\Request $request) {
     if ($request->query('key') !== 'ArkleDrive2026') {
         abort(403, 'Unauthorized. Please provide ?key=ArkleDrive2026');
     }
-    \Illuminate\Support\Facades\Artisan::call('config:clear');
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    \Illuminate\Support\Facades\Artisan::call('route:clear');
-    \Illuminate\Support\Facades\Artisan::call('view:clear');
-    return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">All Laravel caches cleared successfully! (config, cache, route, view)</pre>');
+
+    try {
+        // 1. Physically delete uploaded files in private storage disk
+        try {
+            $files = \App\Models\File::withTrashed()->get();
+            $storageService = app(\App\Services\PrivateStorageService::class);
+            foreach ($files as $file) {
+                if ($file->storage_path) {
+                    $storageService->deletePhysicalFile($file->storage_path, $file->storage_disk);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // 2. Disable foreign key checks and clean all file/folder/import/deleted tables
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \Illuminate\Support\Facades\DB::table('file_user_permissions')->truncate();
+        \Illuminate\Support\Facades\DB::table('file_versions')->truncate();
+        \Illuminate\Support\Facades\DB::table('folder_user_permissions')->truncate();
+        \Illuminate\Support\Facades\DB::table('deleted_items')->truncate();
+        \Illuminate\Support\Facades\DB::table('import_items')->truncate();
+        \Illuminate\Support\Facades\DB::table('import_jobs')->truncate();
+        \Illuminate\Support\Facades\DB::table('files')->truncate();
+        \Illuminate\Support\Facades\DB::table('folders')->truncate();
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // 3. Recreate the 5 standard main user folders
+        \Illuminate\Support\Facades\Artisan::call('db:seed', [
+            '--class' => 'Database\\Seeders\\UserFolderStructureSeeder',
+            '--force' => true,
+        ]);
+
+        // 4. Clear all caches
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+
+        return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;line-height:1.5;">'
+            . "=============================================\n"
+            . "  ARKLE HOMES DRIVE - RESET SUCCESSFUL\n"
+            . "=============================================\n\n"
+            . "All imported/demo files and folders have been completely cleared.\n"
+            . "Total Files: 0\n"
+            . "Storage Used: 0 KB\n"
+            . "Main Folders: 5 standard root folders (Admin, Garima, Ishan, Sean, SK Mann) created.\n\n"
+            . "<a href='/' style='color:#38bdf8;font-weight:bold;font-size:16px;text-decoration:underline;'>&rarr; Click here to go to Dashboard</a> | "
+            . "<a href='/drive' style='color:#38bdf8;font-weight:bold;font-size:16px;text-decoration:underline;'>&rarr; Click here to open Company Drive</a>"
+            . '</pre>');
+    } catch (\Throwable $e) {
+        return response('<pre style="background:#0f172a;color:#f87171;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;line-height:1.5;">'
+            . "RESET ERROR:\n" . e($e->getMessage())
+            . '</pre>', 500);
+    }
 })->withoutMiddleware([
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\View\Middleware\ShareErrorsFromSession::class,

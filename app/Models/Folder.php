@@ -125,4 +125,19 @@ class Folder extends Model
         }
         return (int) $size;
     }
+
+    /**
+     * Get all descendant folder IDs recursively.
+     */
+    public function getAllDescendantIds(bool $withTrashed = false): array
+    {
+        $ids = [];
+        $query = $withTrashed ? Folder::withTrashed() : Folder::query();
+        $children = $query->where('parent_id', $this->id)->get();
+        foreach ($children as $child) {
+            $ids[] = $child->id;
+            $ids = array_merge($ids, $child->getAllDescendantIds($withTrashed));
+        }
+        return $ids;
+    }
 }
