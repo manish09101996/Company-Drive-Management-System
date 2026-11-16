@@ -101,6 +101,15 @@ Route::match(['GET', 'POST'], '/db-status', function (\Illuminate\Http\Request $
             }
             $userListHtml .= '</ul></div>';
 
+            $rolePermsStmt = $pdo->query('SELECT r.slug as role, GROUP_CONCAT(p.slug) as perms FROM roles r LEFT JOIN role_permissions rp ON r.id = rp.role_id LEFT JOIN permissions p ON rp.permission_id = p.id GROUP BY r.id, r.slug');
+            $rolePermRows = $rolePermsStmt ? $rolePermsStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
+            $userListHtml .= '<div style="margin-top:16px;"><strong style="color:#38bdf8;">Role Permissions in Database:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
+            foreach ($rolePermRows as $rp) {
+                $hasImports = str_contains($rp['perms'] ?? '', 'imports.manage') ? '<span style="color:#10b981;">[HAS imports.manage]</span>' : '<span style="color:#f87171;">[NO imports.manage]</span>';
+                $userListHtml .= "<li>Role <code>{$rp['role']}</code>: {$hasImports}</li>";
+            }
+            $userListHtml .= '</ul></div>';
+
             $message = "<div style='background:#065f46;color:#a7f3d0;padding:16px;border-radius:6px;margin-bottom:20px;font-weight:bold;'>
                 &#10004; CURRENT .ENV CREDENTIALS CONNECTED SUCCESSFULLY!
             </div>" . $userListHtml;
