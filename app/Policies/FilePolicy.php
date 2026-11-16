@@ -15,6 +15,14 @@ class FilePolicy
         $this->permissionService = $permissionService;
     }
 
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+        return null;
+    }
+
     public function view(User $user, File $file): bool
     {
         return $this->permissionService->canAccessFile($user, $file, 'view');

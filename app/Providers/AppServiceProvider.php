@@ -33,6 +33,12 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(ImportJob::class, ImportJobPolicy::class);
 
+        Gate::before(function ($user, $ability) {
+            if ($user->isSuperAdmin()) {
+                return true;
+            }
+        });
+
         // Safe fallback for session and cache drivers to prevent 500 crashes on shared hosting before database tables are created
         if (config('session.driver') === 'database') {
             try {

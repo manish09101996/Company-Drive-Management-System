@@ -130,22 +130,28 @@ class PermissionService
             }
         }
 
+        // Uploader has full operational access to their own files
+        if ($file->uploaded_by === $user->id) {
+            return true;
+        }
+
         // Inherited permission from containing folder
         if ($file->folder_id && $file->folder) {
+            // If the folder is effectively assigned to this user, they have full access to files inside it
+            $effectiveAssignedUserId = $file->folder->getEffectiveAssignedUserId();
+            if ($effectiveAssignedUserId !== null && $effectiveAssignedUserId === $user->id) {
+                return true;
+            }
+
             $folderAction = match ($action) {
                 'view' => 'view',
                 'download' => 'download',
-                'edit', 'rename', 'move' => 'edit',
+                'edit', 'rename', 'move' => 'upload',
                 'delete' => 'delete',
                 'share' => 'share',
                 default => 'view',
             };
             return $this->canAccessFolder($user, $file->folder, $folderAction);
-        }
-
-        // Root-level file without a folder: only uploader or Super Admin can access
-        if ($file->uploaded_by === $user->id) {
-            return true;
         }
 
         // Default deny for unassigned / unmatched files

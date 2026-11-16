@@ -15,6 +15,14 @@ class FolderPolicy
         $this->permissionService = $permissionService;
     }
 
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+        return null;
+    }
+
     public function view(User $user, ?Folder $folder = null): bool
     {
         return $this->permissionService->canAccessFolder($user, $folder, 'view');

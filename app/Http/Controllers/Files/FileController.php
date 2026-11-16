@@ -433,7 +433,10 @@ class FileController extends Controller
      */
     public function extractZip(File $file, TakeoutImportService $importService): RedirectResponse
     {
-        $this->authorize('update', $file);
+        $user = Auth::user();
+        if (!$user->isSuperAdmin() && $file->uploaded_by !== $user->id) {
+            $this->authorize('update', $file);
+        }
 
         $ext = strtolower($file->extension ?: pathinfo($file->name, PATHINFO_EXTENSION));
         if ($ext !== 'zip' && !str_contains(strtolower($file->mime_type), 'zip')) {

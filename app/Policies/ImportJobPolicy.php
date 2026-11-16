@@ -7,6 +7,14 @@ use App\Models\User;
 
 class ImportJobPolicy
 {
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+        return null;
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->isSuperAdmin() || $user->hasPermission('imports.manage');
@@ -14,21 +22,29 @@ class ImportJobPolicy
 
     public function view(User $user, ImportJob $job): bool
     {
-        return $user->isSuperAdmin() || $user->hasPermission('imports.manage');
+        return $user->isSuperAdmin() 
+            || $user->hasPermission('imports.manage')
+            || $job->created_by === $user->id;
     }
 
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin() || $user->hasPermission('imports.manage');
+        return $user->isSuperAdmin() 
+            || $user->hasPermission('imports.manage')
+            || $user->hasPermission('files.upload');
     }
 
     public function update(User $user, ImportJob $job): bool
     {
-        return $user->isSuperAdmin() || $user->hasPermission('imports.manage');
+        return $user->isSuperAdmin() 
+            || $user->hasPermission('imports.manage')
+            || $job->created_by === $user->id;
     }
 
     public function delete(User $user, ImportJob $job): bool
     {
-        return $user->isSuperAdmin() || $user->hasPermission('imports.manage');
+        return $user->isSuperAdmin() 
+            || $user->hasPermission('imports.manage')
+            || $job->created_by === $user->id;
     }
 }
