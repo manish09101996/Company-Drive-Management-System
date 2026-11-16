@@ -117,16 +117,56 @@ class File extends Model
         return 'bi-file-earmark text-muted';
     }
 
+    public function getEffectiveMimeTypeAttribute(): string
+    {
+        $ext = strtolower($this->extension ?: pathinfo($this->name, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            'txt' => 'text/plain',
+            'csv' => 'text/csv',
+            'md' => 'text/markdown',
+            'json' => 'application/json',
+            'html' => 'text/html',
+            'htm' => 'text/html',
+            'xml' => 'application/xml',
+            'mp4' => 'video/mp4',
+            'webm' => 'video/webm',
+            'mov' => 'video/quicktime',
+            'mp3' => 'audio/mpeg',
+            'wav' => 'audio/wav',
+        ];
+
+        if (isset($mimeMap[$ext])) {
+            return $mimeMap[$ext];
+        }
+
+        if ($this->mime_type && $this->mime_type !== 'application/octet-stream') {
+            return $this->mime_type;
+        }
+
+        return 'application/octet-stream';
+    }
+
     public function isPreviewable(): bool
     {
-        $mime = strtolower($this->mime_type ?? '');
-        $ext = strtolower($this->extension ?? '');
+        $ext = strtolower($this->extension ?: pathinfo($this->name, PATHINFO_EXTENSION));
+        $mime = strtolower($this->effective_mime_type);
 
-        return str_starts_with($mime, 'image/')
-            || $mime === 'application/pdf'
-            || str_starts_with($mime, 'text/')
-            || in_array($ext, ['txt', 'md', 'json', 'log', 'csv'])
-            || str_starts_with($mime, 'video/')
-            || str_starts_with($mime, 'audio/');
+        return in_array($ext, [
+            'pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp',
+            'txt', 'md', 'json', 'log', 'csv', 'html', 'htm', 'xml',
+            'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg'
+        ])
+        || str_starts_with($mime, 'image/')
+        || $mime === 'application/pdf'
+        || str_starts_with($mime, 'text/')
+        || str_starts_with($mime, 'video/')
+        || str_starts_with($mime, 'audio/');
     }
 }

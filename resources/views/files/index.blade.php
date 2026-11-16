@@ -154,9 +154,19 @@
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="text-uppercase text-muted fw-semibold small mb-0">Folders ({{ $folders->count() }})</h6>
-        <span class="text-muted small" style="font-size: 0.75rem;"><i class="bi bi-files me-1"></i>Direct files preview enabled</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small d-none d-md-inline" style="font-size: 0.75rem;"><i class="bi bi-files me-1"></i>Direct files preview enabled</span>
+            <div class="btn-group btn-group-sm border rounded bg-white shadow-xs" role="group" aria-label="View toggle">
+                <button type="button" class="btn btn-sm btn-primary active px-2" id="btnGridView" onclick="setDriveView('grid')" title="Grid View (Cards)">
+                    <i class="bi bi-grid-fill me-1"></i>Grid
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary border-0 px-2" id="btnListView" onclick="setDriveView('list')" title="List View (Table)">
+                    <i class="bi bi-list-ul me-1"></i>List
+                </button>
+            </div>
+        </div>
     </div>
-    <div class="row g-3">
+    <div id="foldersGridView" class="row g-3">
         @foreach($folders as $folder)
         <div class="col-12 col-md-6 col-xl-4">
             <div class="card h-100 shadow-sm border hover-shadow folder-card" style="border-left: 4px solid {{ $folder->color }} !important;">
@@ -248,34 +258,23 @@
                             <div class="d-flex align-items-center gap-2 text-truncate me-2">
                                 <i class="bi {{ $file->icon_class }} fs-5 flex-shrink-0"></i>
                                 <div class="text-truncate">
-                                    @if($file->isPreviewable())
-                                        <a href="javascript:void(0)" 
-                                           onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->mime_type }}')" 
-                                           class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
-                                           style="max-width: 210px;" 
-                                           title="Preview: {{ $file->name }}">
-                                            {{ $file->name }}
-                                        </a>
-                                    @else
-                                        <a href="{{ route('files.download', $file->id) }}" 
-                                           class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
-                                           style="max-width: 210px;" 
-                                           title="Download: {{ $file->name }}">
-                                            {{ $file->name }}
-                                        </a>
-                                    @endif
+                                    <a href="javascript:void(0)" 
+                                       onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                       class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
+                                       style="max-width: 210px;" 
+                                       title="View / Preview: {{ $file->name }}">
+                                        {{ $file->name }}
+                                    </a>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                                <span class="text-muted font-monospace" style="font-size: 0.72rem;">{{ $file->formatted_size }}</span>
-                                @if($file->isPreviewable())
+                                <span class="text-muted font-monospace me-1" style="font-size: 0.72rem;">{{ $file->formatted_size }}</span>
                                 <a href="javascript:void(0)" 
-                                   onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->mime_type }}')" 
-                                   class="btn btn-sm btn-link text-secondary p-0 px-1" 
-                                   title="Quick Preview">
+                                   onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                   class="btn btn-sm btn-link text-primary p-0 px-1" 
+                                   title="View / Preview">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                @endif
                                 <a href="{{ route('files.download', $file->id) }}" 
                                    class="btn btn-sm btn-link text-secondary p-0 px-1" 
                                    title="Download File">
@@ -293,34 +292,23 @@
                                 <div class="d-flex align-items-center gap-2 text-truncate me-2">
                                     <i class="bi {{ $file->icon_class }} fs-5 flex-shrink-0"></i>
                                     <div class="text-truncate">
-                                        @if($file->isPreviewable())
-                                            <a href="javascript:void(0)" 
-                                               onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->mime_type }}')" 
-                                               class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
-                                               style="max-width: 210px;" 
-                                               title="Preview: {{ $file->name }}">
-                                                {{ $file->name }}
-                                            </a>
-                                        @else
-                                            <a href="{{ route('files.download', $file->id) }}" 
-                                               class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
-                                               style="max-width: 210px;" 
-                                               title="Download: {{ $file->name }}">
-                                                {{ $file->name }}
-                                            </a>
-                                        @endif
+                                        <a href="javascript:void(0)" 
+                                           onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                           class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
+                                           style="max-width: 210px;" 
+                                           title="View / Preview: {{ $file->name }}">
+                                            {{ $file->name }}
+                                        </a>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                                    <span class="text-muted font-monospace" style="font-size: 0.72rem;">{{ $file->formatted_size }}</span>
-                                    @if($file->isPreviewable())
+                                    <span class="text-muted font-monospace me-1" style="font-size: 0.72rem;">{{ $file->formatted_size }}</span>
                                     <a href="javascript:void(0)" 
-                                       onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->mime_type }}')" 
-                                       class="btn btn-sm btn-link text-secondary p-0 px-1" 
-                                       title="Quick Preview">
+                                       onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                       class="btn btn-sm btn-link text-primary p-0 px-1" 
+                                       title="View / Preview">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    @endif
                                     <a href="{{ route('files.download', $file->id) }}" 
                                        class="btn btn-sm btn-link text-secondary p-0 px-1" 
                                        title="Download File">
@@ -377,6 +365,62 @@
     </div>
         @endforeach
     </div>
+
+    <!-- Folders List / Table View -->
+    <div id="foldersListView" class="card shadow-sm border mb-4 d-none">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th style="min-width: 250px;">Folder Name</th>
+                        <th style="min-width: 140px;">Contents</th>
+                        <th style="min-width: 150px;">Assigned User</th>
+                        <th class="text-end" style="min-width: 120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($folders as $folder)
+                    @php
+                        $subCount = $folder->children_count ?? $folder->children()->count();
+                        $fileCount = $folder->files->count();
+                    @endphp
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-folder-fill fs-5" style="color: {{ $folder->color }}"></i>
+                                <a href="{{ route('drive.index', $folder->uuid) }}" class="fw-bold text-dark text-decoration-none">
+                                    {{ $folder->name }}
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border small">
+                                @if($subCount > 0)
+                                    {{ $subCount }} {{ \Illuminate\Support\Str::plural('folder', $subCount) }}@if($fileCount > 0), @endif
+                                @endif
+                                @if($fileCount > 0 || $subCount === 0)
+                                    {{ $fileCount }} {{ \Illuminate\Support\Str::plural('file', $fileCount) }}
+                                @endif
+                            </span>
+                        </td>
+                        <td class="small text-muted">
+                            @if($folder->assignedUser)
+                                <i class="bi bi-person-fill me-1 text-primary"></i>{{ $folder->assignedUser->name }}
+                            @else
+                                <i class="bi bi-building me-1"></i>{{ $folder->department?->code ?? 'Global' }}
+                            @endif
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ route('drive.index', $folder->uuid) }}" class="btn btn-sm btn-outline-primary fw-semibold">
+                                <i class="bi bi-folder2-open me-1"></i>Open Folder
+                            </a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 @endif
 
@@ -411,15 +455,9 @@
                             <div class="d-flex align-items-center gap-2">
                                 <div>
                                     <div class="fw-semibold text-dark text-truncate" style="max-width: 280px;" title="{{ $file->name }}">
-                                        @if($file->isPreviewable())
-                                            <a href="javascript:void(0)" onclick="openPreviewModal('{{ $file->name }}', '{{ route('files.preview', $file->id) }}', '{{ $file->mime_type }}')" class="text-decoration-none text-dark">
-                                                {{ $file->name }}
-                                            </a>
-                                        @else
-                                            <a href="{{ route('files.download', $file->id) }}" class="text-decoration-none text-dark">
-                                                {{ $file->name }}
-                                            </a>
-                                        @endif
+                                        <a href="javascript:void(0)" onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" class="text-decoration-none text-dark" title="Click to View: {{ $file->name }}">
+                                            {{ $file->name }}
+                                        </a>
                                         @if($file->extension === 'zip' || str_ends_with(strtolower($file->name), '.zip'))
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size: 0.65rem;">ZIP Archive</span>
                                         @endif
@@ -444,6 +482,9 @@
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-light border text-primary" onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" title="View / Preview File">
+                                    <i class="bi bi-eye"></i>
+                                </button>
                                 <a href="{{ route('files.download', $file->id) }}" class="btn btn-light border" title="Download File">
                                     <i class="bi bi-download"></i>
                                 </a>
@@ -455,13 +496,14 @@
                                     </button>
                                 </form>
                                 @endif
-                                @if($file->isPreviewable())
-                                <button type="button" class="btn btn-light border" onclick="openPreviewModal('{{ $file->name }}', '{{ route('files.preview', $file->id) }}', '{{ $file->mime_type }}')" title="Quick Preview">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                @endif
                                 <button type="button" class="btn btn-light border dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('files.preview', $file->id) }}" target="_blank">
+                                            <i class="bi bi-box-arrow-up-right me-2 text-primary"></i>View in New Tab
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
                                     @if($file->extension === 'zip' || str_ends_with(strtolower($file->name), '.zip'))
                                     <li>
                                         <form action="{{ route('files.extract', $file->id) }}" method="POST">
@@ -782,12 +824,23 @@
 <!-- 6. Preview Modal -->
 <div class="modal fade" id="previewModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h6 class="modal-title fw-bold" id="previewModalTitle">Document Preview</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header d-flex justify-content-between align-items-center bg-light">
+                <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                    <i class="bi bi-file-earmark-text text-primary fs-5"></i>
+                    <h6 class="modal-title fw-bold text-truncate mb-0" id="previewModalTitle">Document Preview</h6>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a id="previewModalNewTab" href="#" target="_blank" class="btn btn-sm btn-outline-primary" title="Open in new window / full tab">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Full View
+                    </a>
+                    <a id="previewModalDownload" href="#" class="btn btn-sm btn-outline-secondary" download title="Download file">
+                        <i class="bi bi-download me-1"></i> Download
+                    </a>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
-            <div class="modal-body p-0 text-center bg-dark" style="min-height: 500px;" id="previewModalBody">
+            <div class="modal-body p-0 text-center bg-dark" style="min-height: 550px;" id="previewModalBody">
                 <!-- Content injected dynamically -->
             </div>
         </div>
@@ -943,20 +996,55 @@
     }
 
     // Open File Preview Modal
-    function openPreviewModal(filename, previewUrl, mimeType) {
+    function openPreviewModal(filename, previewUrl, mimeType, downloadUrl = null) {
         document.getElementById('previewModalTitle').innerText = filename;
-        const body = document.getElementById('previewModalBody');
+        const newTabBtn = document.getElementById('previewModalNewTab');
+        const downloadBtn = document.getElementById('previewModalDownload');
+        if (newTabBtn) {
+            newTabBtn.href = previewUrl;
+        }
+        if (downloadBtn) {
+            downloadBtn.href = downloadUrl || previewUrl;
+            downloadBtn.style.display = 'inline-flex';
+        }
 
-        if (mimeType.startsWith('image/')) {
-            body.innerHTML = `<img src="${previewUrl}" class="img-fluid p-3" style="max-height: 80vh; object-fit: contain;">`;
-        } else if (mimeType === 'application/pdf') {
-            body.innerHTML = `<iframe src="${previewUrl}" width="100%" height="650px" style="border:none;"></iframe>`;
-        } else if (mimeType.startsWith('video/')) {
-            body.innerHTML = `<video src="${previewUrl}" controls class="w-100 p-2" style="max-height: 70vh;"></video>`;
-        } else if (mimeType.startsWith('audio/')) {
-            body.innerHTML = `<div class="p-5"><audio src="${previewUrl}" controls class="w-75"></audio></div>`;
+        const body = document.getElementById('previewModalBody');
+        const lowerName = filename.toLowerCase();
+        const ext = lowerName.includes('.') ? lowerName.split('.').pop() : '';
+        const mime = (mimeType || '').toLowerCase();
+
+        if (mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
+            body.className = 'modal-body p-3 text-center bg-dark d-flex align-items-center justify-content-center';
+            body.innerHTML = `<img src="${previewUrl}" class="img-fluid rounded shadow" style="max-height: 80vh; max-width: 100%; object-fit: contain;">`;
+        } else if (mime === 'application/pdf' || ext === 'pdf') {
+            body.className = 'modal-body p-0 text-center bg-secondary';
+            body.innerHTML = `<iframe src="${previewUrl}" width="100%" height="720px" style="border:none; display:block; background:#fff;"></iframe>`;
+        } else if (mime.startsWith('video/') || ['mp4', 'webm', 'ogg', 'mov'].includes(ext)) {
+            body.className = 'modal-body p-3 text-center bg-dark';
+            body.innerHTML = `<video src="${previewUrl}" controls autoplay class="w-100 rounded" style="max-height: 75vh;"></video>`;
+        } else if (mime.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
+            body.className = 'modal-body p-5 text-center bg-dark d-flex align-items-center justify-content-center';
+            body.innerHTML = `<audio src="${previewUrl}" controls class="w-75"></audio>`;
+        } else if (['txt', 'csv', 'json', 'log', 'md', 'html', 'xml'].includes(ext)) {
+            body.className = 'modal-body p-0 bg-light';
+            body.innerHTML = `<iframe src="${previewUrl}" width="100%" height="650px" style="border:none; display:block; background:#fff;"></iframe>`;
         } else {
-            body.innerHTML = `<iframe src="${previewUrl}" width="100%" height="550px" style="border:none; background: #fff;"></iframe>`;
+            body.className = 'modal-body p-5 text-center bg-light';
+            body.innerHTML = `
+                <div class="py-5">
+                    <i class="bi bi-file-earmark-break text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="fw-bold mt-3">${filename}</h5>
+                    <p class="text-muted">Direct preview is not supported for this file type in browser.</p>
+                    <div class="d-flex justify-content-center gap-2 mt-4">
+                        <a href="${downloadUrl || previewUrl}" class="btn btn-primary">
+                            <i class="bi bi-download me-1"></i> Download File
+                        </a>
+                        <a href="${previewUrl}" target="_blank" class="btn btn-outline-secondary">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Open Raw
+                        </a>
+                    </div>
+                </div>
+            `;
         }
 
         new bootstrap.Modal(document.getElementById('previewModal')).show();
@@ -1107,5 +1195,36 @@
             }
         }, 50);
     }
+
+    // Grid vs List View toggle for Folders
+    function setDriveView(mode) {
+        const gridView = document.getElementById('foldersGridView');
+        const listView = document.getElementById('foldersListView');
+        const btnGrid = document.getElementById('btnGridView');
+        const btnList = document.getElementById('btnListView');
+
+        if (!gridView || !listView) return;
+
+        if (mode === 'list') {
+            gridView.classList.add('d-none');
+            listView.classList.remove('d-none');
+            if (btnGrid) { btnGrid.classList.remove('active', 'btn-primary'); btnGrid.classList.add('btn-outline-secondary'); }
+            if (btnList) { btnList.classList.add('active', 'btn-primary'); btnList.classList.remove('btn-outline-secondary'); }
+            localStorage.setItem('drive_folders_view', 'list');
+        } else {
+            listView.classList.add('d-none');
+            gridView.classList.remove('d-none');
+            if (btnList) { btnList.classList.remove('active', 'btn-primary'); btnList.classList.add('btn-outline-secondary'); }
+            if (btnGrid) { btnGrid.classList.add('active', 'btn-primary'); btnGrid.classList.remove('btn-outline-secondary'); }
+            localStorage.setItem('drive_folders_view', 'grid');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedMode = localStorage.getItem('drive_folders_view');
+        if (savedMode === 'list') {
+            setDriveView('list');
+        }
+    });
 </script>
 @endsection

@@ -90,7 +90,7 @@ class PrivateStorageService
 
         $fullPath = $disk->path($path);
         $fileSize = $file->size_bytes > 0 ? $file->size_bytes : filesize($fullPath);
-        $mimeType = $file->mime_type ?: 'application/octet-stream';
+        $mimeType = $file->effective_mime_type ?: ($file->mime_type ?: 'application/octet-stream');
         $dispositionType = $inline ? 'inline' : 'attachment';
         $safeFilename = str_replace(['"', "\r", "\n"], '', $file->name);
 
