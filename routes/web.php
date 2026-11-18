@@ -110,6 +110,25 @@ Route::match(['GET', 'POST'], '/db-status', function (\Illuminate\Http\Request $
             }
             $userListHtml .= '</ul></div>';
 
+            $fileCheckStmt = $pdo->query("SELECT id, name, folder_id, size_bytes, storage_disk, storage_path, mime_type, extension, created_at FROM files WHERE name LIKE '%HEYERS%' OR name LIKE '%12979%' LIMIT 10");
+            $fileRows = $fileCheckStmt ? $fileCheckStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
+            $userListHtml .= '<div style="margin-top:16px;"><strong style="color:#38bdf8;">Matching Files in DB:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
+            foreach ($fileRows as $fr) {
+                $fPath = storage_path('app/private/' . $fr['storage_path']);
+                $fExists = file_exists($fPath);
+                $diskBytes = $fExists ? filesize($fPath) : 'NOT_FOUND';
+                $userListHtml .= "<li>ID {$fr['id']}: <strong>{$fr['name']}</strong> &mdash; DB size: <code>{$fr['size_bytes']}</code> &mdash; Disk size: <code>{$diskBytes}</code> &mdash; Path: <code>{$fr['storage_path']}</code> &mdash; Exists: " . ($fExists ? 'YES' : 'NO') . "</li>";
+            }
+            $userListHtml .= '</ul></div>';
+
+            $importItemStmt = $pdo->query("SELECT id, import_job_id, entry_name, size_bytes, status, error_message FROM import_items WHERE entry_name LIKE '%HEYERS%' LIMIT 5");
+            $importRows = $importItemStmt ? $importItemStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
+            $userListHtml .= '<div style="margin-top:16px;"><strong style="color:#38bdf8;">Matching Import Items:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
+            foreach ($importRows as $ir) {
+                $userListHtml .= "<li>ID {$ir['id']}: Job {$ir['import_job_id']} &mdash; <strong>{$ir['entry_name']}</strong> &mdash; Size: <code>{$ir['size_bytes']}</code> &mdash; Status: <code>{$ir['status']}</code> &mdash; Err: " . htmlspecialchars($ir['error_message'] ?? 'none') . "</li>";
+            }
+            $userListHtml .= '</ul></div>';
+
             $message = "<div style='background:#065f46;color:#a7f3d0;padding:16px;border-radius:6px;margin-bottom:20px;font-weight:bold;'>
                 &#10004; CURRENT .ENV CREDENTIALS CONNECTED SUCCESSFULLY!
             </div>" . $userListHtml;
