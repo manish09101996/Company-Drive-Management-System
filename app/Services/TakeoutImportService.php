@@ -334,7 +334,11 @@ class TakeoutImportService
                         ->first();
 
                     if ($existingFile) {
-                        if ($duplicateAction === 'skip') {
+                        // If existing file is an empty 0-byte placeholder/shortcut and incoming file has real content,
+                        // always overwrite the 0-byte entry so the placeholder is repaired with the complete file.
+                        if ($existingFile->size_bytes === 0 && $item->size_bytes > 0) {
+                            $duplicateAction = 'overwrite';
+                        } elseif ($duplicateAction === 'skip') {
                             $item->update([
                                 'status' => 'skipped',
                                 'destination_folder_id' => $parentFolder?->id,

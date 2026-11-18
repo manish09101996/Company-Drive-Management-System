@@ -314,11 +314,144 @@ Route::get('/clear-cache', function (\Illuminate\Http\Request $request) {
         }
     } catch (\Throwable) {}
 
+    // Also heal any 0-byte files that have real data in storage or database
+    try {
+        $zeroFiles = \App\Models\File::where('size_bytes', 0)->get();
+        foreach ($zeroFiles as $zf) {
+            $disk = \Illuminate\Support\Facades\Storage::disk($zf->storage_disk ?: 'private');
+            $diskFullPath = $disk->path($zf->storage_path);
+            clearstatcache(true, $diskFullPath);
+            if (file_exists($diskFullPath) && filesize($diskFullPath) > 0) {
+                $realSize = filesize($diskFullPath);
+                $zf->update([
+                    'size_bytes' => $realSize,
+                    'checksum_sha256' => hash_file('sha256', $diskFullPath),
+                ]);
+                continue;
+            }
+
+            $cleanName = preg_replace('/\s*\(\d+\)\s*(?=\.[^.]+$)/', '', $zf->name);
+            $match = \App\Models\File::where('size_bytes', '>', 0)
+                ->where(function ($q) use ($zf, $cleanName) {
+                    $q->where('name', $zf->name)
+                      ->orWhere('name', 'LIKE', $cleanName . '%');
+                })
+                ->where('id', '!=', $zf->id)
+                ->orderByDesc('size_bytes')
+                ->first();
+
+            if ($match) {
+                $matchDisk = \Illuminate\Support\Facades\Storage::disk($match->storage_disk ?: 'private');
+                $matchFullPath = $matchDisk->path($match->storage_path);
+                clearstatcache(true, $matchFullPath);
+                if (file_exists($matchFullPath) && filesize($matchFullPath) > 0) {
+                    $zf->update([
+                        'storage_disk' => $match->storage_disk,
+                        'storage_path' => $match->storage_path,
+                        'size_bytes' => $match->size_bytes,
+                        'checksum_sha256' => $match->checksum_sha256,
+                        'mime_type' => $match->mime_type,
+                        'extension' => $match->extension,
+                    ]);
+
+                    \App\Models\FileVersion::updateOrCreate(
+                        ['file_id' => $zf->id, 'version_number' => 1],
+                        [
+                            'storage_disk' => $match->storage_disk,
+                            'storage_path' => $match->storage_path,
+                            'size_bytes' => $match->size_bytes,
+                            'checksum_sha256' => $match->checksum_sha256,
+                            'change_summary' => 'Auto-restored from complete file record #' . $match->id,
+                        ]
+                    );
+                }
+            }
+        }
+    } catch (\Throwable) {}
+
     \Illuminate\Support\Facades\Artisan::call('config:clear');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     \Illuminate\Support\Facades\Artisan::call('route:clear');
     \Illuminate\Support\Facades\Artisan::call('view:clear');
-    return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">All Laravel caches cleared successfully! (config, cache, route, view) &amp; permissions verified.</pre>');
+    return response('<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">All Laravel caches cleared successfully! (config, cache, route, view), permissions verified, and 0-byte files healed.</pre>');
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+]);
+
+Route::get('/heal-zero-files', function (\Illuminate\Http\Request $request) {
+    if ($request->query('key') !== 'ArkleDrive2026') {
+        abort(403, 'Unauthorized. Please provide ?key=ArkleDrive2026');
+    }
+
+    $zeroFiles = \App\Models\File::where('size_bytes', 0)->get();
+    $healed = [];
+
+    foreach ($zeroFiles as $zf) {
+        $disk = \Illuminate\Support\Facades\Storage::disk($zf->storage_disk ?: 'private');
+        $diskFullPath = $disk->path($zf->storage_path);
+        clearstatcache(true, $diskFullPath);
+
+        if (file_exists($diskFullPath) && filesize($diskFullPath) > 0) {
+            $realSize = filesize($diskFullPath);
+            $zf->update([
+                'size_bytes' => $realSize,
+                'checksum_sha256' => hash_file('sha256', $diskFullPath),
+            ]);
+            $healed[] = "ID {$zf->id} ({$zf->name}): Re-indexed disk size ({$realSize} bytes)";
+            continue;
+        }
+
+        $cleanName = preg_replace('/\s*\(\d+\)\s*(?=\.[^.]+$)/', '', $zf->name);
+        $match = \App\Models\File::where('size_bytes', '>', 0)
+            ->where(function ($q) use ($zf, $cleanName) {
+                $q->where('name', $zf->name)
+                  ->orWhere('name', 'LIKE', $cleanName . '%');
+            })
+            ->where('id', '!=', $zf->id)
+            ->orderByDesc('size_bytes')
+            ->first();
+
+        if ($match) {
+            $matchDisk = \Illuminate\Support\Facades\Storage::disk($match->storage_disk ?: 'private');
+            $matchFullPath = $matchDisk->path($match->storage_path);
+            clearstatcache(true, $matchFullPath);
+            if (file_exists($matchFullPath) && filesize($matchFullPath) > 0) {
+                $zf->update([
+                    'storage_disk' => $match->storage_disk,
+                    'storage_path' => $match->storage_path,
+                    'size_bytes' => $match->size_bytes,
+                    'checksum_sha256' => $match->checksum_sha256,
+                    'mime_type' => $match->mime_type,
+                    'extension' => $match->extension,
+                ]);
+
+                \App\Models\FileVersion::updateOrCreate(
+                    ['file_id' => $zf->id, 'version_number' => 1],
+                    [
+                        'storage_disk' => $match->storage_disk,
+                        'storage_path' => $match->storage_path,
+                        'size_bytes' => $match->size_bytes,
+                        'checksum_sha256' => $match->checksum_sha256,
+                        'change_summary' => 'Auto-restored from complete file record #' . $match->id,
+                    ]
+                );
+
+                $healed[] = "ID {$zf->id} ({$zf->name}): Restored using Match ID {$match->id} ({$match->size_bytes} bytes)";
+            }
+        }
+    }
+
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+
+    $html = '<pre style="background:#0f172a;color:#10b981;padding:24px;border-radius:8px;font-family:monospace;font-size:14px;">';
+    $html .= "Healed " . count($healed) . " zero-byte file(s):\n";
+    foreach ($healed as $h) {
+        $html .= "- " . htmlspecialchars($h) . "\n";
+    }
+    $html .= "\nRemaining zero-byte files: " . \App\Models\File::where('size_bytes', 0)->count() . "\n</pre>";
+    return response($html);
 })->withoutMiddleware([
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\View\Middleware\ShareErrorsFromSession::class,

@@ -261,7 +261,7 @@
                                 <i class="bi {{ $file->icon_class }} fs-5 flex-shrink-0"></i>
                                 <div class="text-truncate">
                                     <a href="javascript:void(0)" 
-                                       onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                       onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}', {{ (int)$file->size_bytes }}, '{{ $file->formatted_size }}', {{ $file->id }})" 
                                        class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
                                        style="max-width: 210px;" 
                                        title="View / Preview: {{ $file->name }}">
@@ -272,7 +272,7 @@
                             <div class="d-flex align-items-center gap-1 flex-shrink-0">
                                 <span class="text-muted font-monospace me-1" style="font-size: 0.72rem;">{{ $file->formatted_size }}</span>
                                 <a href="javascript:void(0)" 
-                                   onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                   onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}', {{ (int)$file->size_bytes }}, '{{ $file->formatted_size }}', {{ $file->id }})" 
                                    class="btn btn-sm btn-link text-primary p-0 px-1" 
                                    title="View / Preview">
                                     <i class="bi bi-eye"></i>
@@ -295,7 +295,7 @@
                                     <i class="bi {{ $file->icon_class }} fs-5 flex-shrink-0"></i>
                                     <div class="text-truncate">
                                         <a href="javascript:void(0)" 
-                                           onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                           onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}', {{ (int)$file->size_bytes }}, '{{ $file->formatted_size }}', {{ $file->id }})" 
                                            class="text-dark fw-semibold small text-decoration-none text-truncate d-inline-block" 
                                            style="max-width: 210px;" 
                                            title="View / Preview: {{ $file->name }}">
@@ -306,7 +306,7 @@
                                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
                                     <span class="text-muted font-monospace me-1" style="font-size: 0.72rem;">{{ $file->formatted_size }}</span>
                                     <a href="javascript:void(0)" 
-                                       onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" 
+                                       onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}', {{ (int)$file->size_bytes }}, '{{ $file->formatted_size }}', {{ $file->id }})" 
                                        class="btn btn-sm btn-link text-primary p-0 px-1" 
                                        title="View / Preview">
                                         <i class="bi bi-eye"></i>
@@ -457,7 +457,7 @@
                             <div class="d-flex align-items-center gap-2">
                                 <div>
                                     <div class="fw-semibold text-dark text-truncate" style="max-width: 280px;" title="{{ $file->name }}">
-                                        <a href="javascript:void(0)" onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" class="text-decoration-none text-dark" title="Click to View: {{ $file->name }}">
+                                        <a href="javascript:void(0)" onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}', {{ (int)$file->size_bytes }}, '{{ $file->formatted_size }}', {{ $file->id }})" class="text-decoration-none text-dark" title="Click to View: {{ $file->name }}">
                                             {{ $file->name }}
                                         </a>
                                         @if($file->extension === 'zip' || str_ends_with(strtolower($file->name), '.zip'))
@@ -484,7 +484,7 @@
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-light border text-primary" onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}')" title="View / Preview File">
+                                <button type="button" class="btn btn-light border text-primary" onclick="openPreviewModal('{{ addslashes($file->name) }}', '{{ route('files.preview', $file->id) }}', '{{ $file->effective_mime_type }}', '{{ route('files.download', $file->id) }}', {{ (int)$file->size_bytes }}, '{{ $file->formatted_size }}', {{ $file->id }})" title="View / Preview File">
                                     <i class="bi bi-eye"></i>
                                 </button>
                                 <a href="{{ route('files.download', $file->id) }}" class="btn btn-light border" title="Download File">
@@ -998,8 +998,8 @@
     }
 
     // Open File Preview Modal
-    function openPreviewModal(filename, previewUrl, mimeType, downloadUrl = null) {
-        document.getElementById('previewModalTitle').innerText = filename;
+    function openPreviewModal(filename, previewUrl, mimeType, downloadUrl = null, sizeBytes = null, formattedSize = null, fileId = null) {
+        document.getElementById('previewModalTitle').innerText = filename + (formattedSize ? ' (' + formattedSize + ')' : '');
         const newTabBtn = document.getElementById('previewModalNewTab');
         const downloadBtn = document.getElementById('previewModalDownload');
         if (newTabBtn) {
@@ -1015,12 +1015,52 @@
         const ext = lowerName.includes('.') ? lowerName.split('.').pop() : '';
         const mime = (mimeType || '').toLowerCase();
 
+        // If file is 0 bytes (empty or placeholder), show clear empty state with replacement option
+        if (sizeBytes !== null && parseInt(sizeBytes) === 0) {
+            body.className = 'modal-body p-5 text-center bg-dark text-light';
+            body.innerHTML = `
+                <div class="py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-file-earmark-x text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2 text-break">${filename}</h5>
+                    <div class="mb-3">
+                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger px-3 py-2">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Empty Document (0 Bytes)
+                        </span>
+                    </div>
+                    <p class="text-secondary mx-auto mb-4" style="max-width: 480px; font-size: 0.95rem;">
+                        This document has a recorded size of 0 Bytes and cannot be rendered in the document previewer.
+                        This can occur when an export includes a Google Drive shortcut, or when an upload was interrupted.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        ${fileId ? `
+                        <button type="button" class="btn btn-primary" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('previewModal')); if(m) m.hide(); openVersionModal(${fileId}, '${filename.replace(/'/g, "\\'")}')">
+                            <i class="bi bi-cloud-arrow-up me-1"></i> Upload Replacement Version
+                        </button>
+                        ` : ''}
+                        <a href="${downloadUrl || previewUrl}" class="btn btn-outline-light" download>
+                            <i class="bi bi-download me-1"></i> Download File (0 B)
+                        </a>
+                    </div>
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+            return;
+        }
+
         if (mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
             body.className = 'modal-body p-3 text-center bg-dark d-flex align-items-center justify-content-center';
             body.innerHTML = `<img src="${previewUrl}" class="img-fluid rounded shadow" style="max-height: 80vh; max-width: 100%; object-fit: contain;">`;
         } else if (mime === 'application/pdf' || ext === 'pdf') {
-            body.className = 'modal-body p-0 text-center bg-secondary';
-            body.innerHTML = `<iframe src="${previewUrl}" width="100%" height="720px" style="border:none; display:block; background:#fff;"></iframe>`;
+            body.className = 'modal-body p-0 text-center bg-dark position-relative';
+            body.innerHTML = `
+                <div id="pdfLoadingSpinner" class="d-flex flex-column align-items-center justify-content-center text-white py-5" style="position: absolute; width: 100%; height: 100%; min-height: 720px; top: 0; left: 0; z-index: 1; background: rgba(15, 23, 42, 0.95);">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <div class="small text-light">Loading document preview...</div>
+                </div>
+                <iframe src="${previewUrl}#toolbar=1" width="100%" height="720px" style="border:none; display:block; background:#fff; position: relative; z-index: 2;" onload="document.getElementById('pdfLoadingSpinner')?.remove()"></iframe>
+            `;
         } else if (mime.startsWith('video/') || ['mp4', 'webm', 'ogg', 'mov'].includes(ext)) {
             body.className = 'modal-body p-3 text-center bg-dark';
             body.innerHTML = `<video src="${previewUrl}" controls autoplay class="w-100 rounded" style="max-height: 75vh;"></video>`;
@@ -1113,7 +1153,7 @@
                 }
 
                 const file = files[index];
-                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
                 const uploadId = 'up_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 let chunkIndex = 0;
 
@@ -1133,6 +1173,7 @@
                     formData.append('upload_id', uploadId);
                     formData.append('chunk_index', chunkIndex);
                     formData.append('total_chunks', totalChunks);
+                    formData.append('file_size', file.size);
                     formData.append('original_filename', file.name);
                     if (folderId) {
                         formData.append('folder_id', folderId);

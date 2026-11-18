@@ -15,7 +15,9 @@ use App\Services\TakeoutImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -94,6 +96,7 @@ class FileController extends Controller
             fclose($outHandle);
             @rmdir($tempDir);
 
+            clearstatcache(true, $fullStoragePath);
             $sizeBytes = file_exists($fullStoragePath) ? filesize($fullStoragePath) : 0;
             $checksum = file_exists($fullStoragePath) ? hash_file('sha256', $fullStoragePath) : null;
             $mimeType = @mime_content_type($fullStoragePath) ?: 'application/octet-stream';
@@ -226,6 +229,8 @@ class FileController extends Controller
     {
         $this->authorize('download', $file);
 
+        $file = $this->healIfZero($file);
+
         AuditLogService::log('file.downloaded', 'File', $file->id, [
             'name' => $file->name,
             'size_bytes' => $file->size_bytes,
@@ -237,15 +242,93 @@ class FileController extends Controller
     /**
      * Stream a file inline for previewing.
      */
-    public function preview(File $file): StreamedResponse
+    public function preview(File $file): StreamedResponse|Response
     {
         $this->authorize('view', $file);
+
+        $file = $this->healIfZero($file);
 
         AuditLogService::log('file.previewed', 'File', $file->id, [
             'name' => $file->name,
         ]);
 
+        // If file is still empty (0 bytes) after auto-healing, return friendly preview view
+        if ($file->size_bytes === 0) {
+            $disk = Storage::disk($file->storage_disk ?: 'private');
+            $fullPath = $disk->path($file->storage_path);
+            clearstatcache(true, $fullPath);
+            if (!file_exists($fullPath) || filesize($fullPath) === 0) {
+                return response(view('files.empty_preview', [
+                    'file' => $file,
+                    'downloadUrl' => route('files.download', $file->id),
+                ]), 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+            }
+        }
+
         return $this->storageService->streamFile($file, true);
+    }
+
+    /**
+     * Attempt to auto-heal a 0-byte file if a valid copy exists on disk or in the database.
+     */
+    protected function healIfZero(File $file): File
+    {
+        if ($file->size_bytes > 0) {
+            return $file;
+        }
+
+        $disk = Storage::disk($file->storage_disk ?: 'private');
+        $fullPath = $disk->path($file->storage_path);
+        clearstatcache(true, $fullPath);
+        $realDiskSize = file_exists($fullPath) ? filesize($fullPath) : 0;
+
+        if ($realDiskSize > 0) {
+            $file->update([
+                'size_bytes' => $realDiskSize,
+                'checksum_sha256' => hash_file('sha256', $fullPath),
+            ]);
+            return $file;
+        }
+
+        // Search for matching non-zero file by identical name or base name
+        $cleanName = preg_replace('/\s*\(\d+\)\s*(?=\.[^.]+$)/', '', $file->name);
+        $match = File::where('size_bytes', '>', 0)
+            ->where(function ($q) use ($file, $cleanName) {
+                $q->where('name', $file->name)
+                  ->orWhere('name', 'LIKE', $cleanName . '%');
+            })
+            ->where('id', '!=', $file->id)
+            ->orderByDesc('size_bytes')
+            ->first();
+
+        if ($match) {
+            $matchDisk = Storage::disk($match->storage_disk ?: 'private');
+            $matchFullPath = $matchDisk->path($match->storage_path);
+            clearstatcache(true, $matchFullPath);
+            if (file_exists($matchFullPath) && filesize($matchFullPath) > 0) {
+                $file->update([
+                    'storage_disk' => $match->storage_disk,
+                    'storage_path' => $match->storage_path,
+                    'size_bytes' => $match->size_bytes,
+                    'checksum_sha256' => $match->checksum_sha256,
+                    'mime_type' => $match->mime_type,
+                    'extension' => $match->extension,
+                ]);
+
+                FileVersion::updateOrCreate(
+                    ['file_id' => $file->id, 'version_number' => 1],
+                    [
+                        'storage_disk' => $match->storage_disk,
+                        'storage_path' => $match->storage_path,
+                        'size_bytes' => $match->size_bytes,
+                        'checksum_sha256' => $match->checksum_sha256,
+                        'change_summary' => 'Auto-restored from complete file record #' . $match->id,
+                    ]
+                );
+            }
+        }
+
+        return $file;
     }
 
     /**
