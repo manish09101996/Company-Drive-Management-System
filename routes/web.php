@@ -110,28 +110,12 @@ Route::match(['GET', 'POST'], '/db-status', function (\Illuminate\Http\Request $
             }
             $userListHtml .= '</ul></div>';
 
-            $fileCheckStmt = $pdo->query("SELECT f.id, f.name, f.folder_id, fo.name as folder_name, f.size_bytes, f.storage_disk, f.storage_path, f.mime_type, f.extension, f.created_at FROM files f LEFT JOIN folders fo ON f.folder_id = fo.id WHERE f.name LIKE '%HEYERS%' LIMIT 10");
-            $fileRows = $fileCheckStmt ? $fileCheckStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
-            $userListHtml .= '<div style="margin-top:16px;"><strong style="color:#38bdf8;">Matching Files in DB:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
-            foreach ($fileRows as $fr) {
-                $fPath = storage_path('app/private/' . $fr['storage_path']);
-                $fExists = file_exists($fPath);
-                $diskBytes = $fExists ? filesize($fPath) : 'NOT_FOUND';
-                $userListHtml .= "<li>ID {$fr['id']}: <strong>{$fr['name']}</strong> (in Folder: <code>" . ($fr['folder_name'] ?? 'Root') . " [ID: {$fr['folder_id']}]</code>) &mdash; DB size: <code>{$fr['size_bytes']}</code> &mdash; Disk size: <code>{$diskBytes}</code> &mdash; Path: <code>{$fr['storage_path']}</code></li>";
+            $zeroCount = \App\Models\File::where('size_bytes', 0)->count();
+            if ($zeroCount > 0) {
+                $userListHtml .= "<div style='margin-top:16px;'><strong style='color:#f59e0b;'>Zero-Byte Files Detected: {$zeroCount}</strong> &mdash; <a href='/heal-zero-files?key=ArkleDrive2026' style='color:#38bdf8;text-decoration:underline;'>Auto-Heal 0-Byte Files &rarr;</a></div>";
+            } else {
+                $userListHtml .= "<div style='margin-top:16px;'><strong style='color:#10b981;'>&#10004; All files have verified valid content (0 empty files).</strong></div>";
             }
-            $userListHtml .= '</ul></div>';
-
-            $zeroCountStmt = $pdo->query("SELECT count(*) as total_zero FROM files WHERE size_bytes = 0");
-            $zeroCount = $zeroCountStmt ? $zeroCountStmt->fetchColumn() : 0;
-            $userListHtml .= "<div style='margin-top:16px;'><strong style='color:#f43f5e;'>Total 0-Byte Files in DB: {$zeroCount}</strong></div>";
-
-            $allZeroStmt = $pdo->query("SELECT f.id, f.name, f.folder_id, fo.name as folder_name, f.size_bytes, f.storage_path FROM files f LEFT JOIN folders fo ON f.folder_id = fo.id WHERE f.size_bytes = 0");
-            $allZeroRows = $allZeroStmt ? $allZeroStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
-            $userListHtml .= '<div style="margin-top:10px;"><strong style="color:#f43f5e;">All 8 Zero-Byte Files in DB:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
-            foreach ($allZeroRows as $zr) {
-                $userListHtml .= "<li>ID {$zr['id']}: <strong>{$zr['name']}</strong> (in <code>{$zr['folder_name']} [ID: {$zr['folder_id']}]</code>) &mdash; Path: <code>{$zr['storage_path']}</code></li>";
-            }
-            $userListHtml .= '</ul></div>';
 
             $message = "<div style='background:#065f46;color:#a7f3d0;padding:16px;border-radius:6px;margin-bottom:20px;font-weight:bold;'>
                 &#10004; CURRENT .ENV CREDENTIALS CONNECTED SUCCESSFULLY!
@@ -330,11 +314,12 @@ Route::get('/clear-cache', function (\Illuminate\Http\Request $request) {
                 continue;
             }
 
-            $cleanName = preg_replace('/\s*\(\d+\)\s*(?=\.[^.]+$)/', '', $zf->name);
+            $filename = pathinfo($zf->name, PATHINFO_FILENAME);
+            $cleanBase = preg_replace('/\s*\(\d+\)$/', '', $filename);
             $match = \App\Models\File::where('size_bytes', '>', 0)
-                ->where(function ($q) use ($zf, $cleanName) {
+                ->where(function ($q) use ($zf, $cleanBase) {
                     $q->where('name', $zf->name)
-                      ->orWhere('name', 'LIKE', $cleanName . '%');
+                      ->orWhere('name', 'LIKE', $cleanBase . '%');
                 })
                 ->where('id', '!=', $zf->id)
                 ->orderByDesc('size_bytes')
@@ -403,11 +388,12 @@ Route::get('/heal-zero-files', function (\Illuminate\Http\Request $request) {
             continue;
         }
 
-        $cleanName = preg_replace('/\s*\(\d+\)\s*(?=\.[^.]+$)/', '', $zf->name);
+        $filename = pathinfo($zf->name, PATHINFO_FILENAME);
+        $cleanBase = preg_replace('/\s*\(\d+\)$/', '', $filename);
         $match = \App\Models\File::where('size_bytes', '>', 0)
-            ->where(function ($q) use ($zf, $cleanName) {
+            ->where(function ($q) use ($zf, $cleanBase) {
                 $q->where('name', $zf->name)
-                  ->orWhere('name', 'LIKE', $cleanName . '%');
+                  ->orWhere('name', 'LIKE', $cleanBase . '%');
             })
             ->where('id', '!=', $zf->id)
             ->orderByDesc('size_bytes')

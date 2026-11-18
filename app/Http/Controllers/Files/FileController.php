@@ -290,12 +290,15 @@ class FileController extends Controller
             return $file;
         }
 
-        // Search for matching non-zero file by identical name or base name
-        $cleanName = preg_replace('/\s*\(\d+\)\s*(?=\.[^.]+$)/', '', $file->name);
+        // Search for matching non-zero file by identical name or base name (e.g. file(1).pdf matches file.pdf)
+        $filename = pathinfo($file->name, PATHINFO_FILENAME);
+        $cleanBase = preg_replace('/\s*\(\d+\)$/', '', $filename);
+        $ext = strtolower($file->extension ?: pathinfo($file->name, PATHINFO_EXTENSION));
+
         $match = File::where('size_bytes', '>', 0)
-            ->where(function ($q) use ($file, $cleanName) {
+            ->where(function ($q) use ($file, $cleanBase) {
                 $q->where('name', $file->name)
-                  ->orWhere('name', 'LIKE', $cleanName . '%');
+                  ->orWhere('name', 'LIKE', $cleanBase . '%');
             })
             ->where('id', '!=', $file->id)
             ->orderByDesc('size_bytes')
