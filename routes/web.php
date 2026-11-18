@@ -125,11 +125,11 @@ Route::match(['GET', 'POST'], '/db-status', function (\Illuminate\Http\Request $
             $zeroCount = $zeroCountStmt ? $zeroCountStmt->fetchColumn() : 0;
             $userListHtml .= "<div style='margin-top:16px;'><strong style='color:#f43f5e;'>Total 0-Byte Files in DB: {$zeroCount}</strong></div>";
 
-            $healableStmt = $pdo->query("SELECT f0.id as zero_id, f0.name, f0.folder_id, fo.name as folder_name, fReal.id as real_id, fReal.size_bytes as real_size, fReal.storage_path as real_path FROM files f0 LEFT JOIN folders fo ON f0.folder_id = fo.id JOIN files fReal ON f0.name = fReal.name AND fReal.size_bytes > 0 AND f0.id != fReal.id WHERE f0.size_bytes = 0");
-            $healableRows = $healableStmt ? $healableStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
-            $userListHtml .= '<div style="margin-top:10px;"><strong style="color:#a3e635;">0-Byte Files with Real Matching Files found in DB (' . count($healableRows) . ' healable):</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
-            foreach ($healableRows as $hr) {
-                $userListHtml .= "<li>0-Byte File ID {$hr['zero_id']}: <strong>{$hr['name']}</strong> (in <code>{$hr['folder_name']}</code>) &rarr; Matches Real File ID {$hr['real_id']} ({$hr['real_size']} bytes)</li>";
+            $allZeroStmt = $pdo->query("SELECT f.id, f.name, f.folder_id, fo.name as folder_name, f.size_bytes, f.storage_path FROM files f LEFT JOIN folders fo ON f.folder_id = fo.id WHERE f.size_bytes = 0");
+            $allZeroRows = $allZeroStmt ? $allZeroStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
+            $userListHtml .= '<div style="margin-top:10px;"><strong style="color:#f43f5e;">All 8 Zero-Byte Files in DB:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
+            foreach ($allZeroRows as $zr) {
+                $userListHtml .= "<li>ID {$zr['id']}: <strong>{$zr['name']}</strong> (in <code>{$zr['folder_name']} [ID: {$zr['folder_id']}]</code>) &mdash; Path: <code>{$zr['storage_path']}</code></li>";
             }
             $userListHtml .= '</ul></div>';
 
