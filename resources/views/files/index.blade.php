@@ -159,16 +159,16 @@
         <div class="d-flex align-items-center gap-2">
             <span class="text-muted small d-none d-md-inline" style="font-size: 0.75rem;"><i class="bi bi-files me-1"></i>Direct files preview enabled</span>
             <div class="btn-group btn-group-sm border rounded bg-white shadow-xs" role="group" aria-label="View toggle">
-                <button type="button" class="btn btn-sm btn-primary active px-2" id="btnGridView" onclick="setDriveView('grid')" title="Grid View (Cards)">
+                <button type="button" class="btn btn-sm btn-outline-secondary border-0 px-2" id="btnGridView" onclick="setDriveView('grid')" title="Grid View (Cards)">
                     <i class="bi bi-grid-fill me-1"></i>Grid
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary border-0 px-2" id="btnListView" onclick="setDriveView('list')" title="List View (Table)">
+                <button type="button" class="btn btn-sm btn-primary active px-2" id="btnListView" onclick="setDriveView('list')" title="List View (Table)">
                     <i class="bi bi-list-ul me-1"></i>List
                 </button>
             </div>
         </div>
     </div>
-    <div id="foldersGridView" class="row g-3">
+    <div id="foldersGridView" class="row g-3 d-none">
         @foreach($folders as $folder)
         <div class="col-12 col-md-6 col-xl-4">
             <div class="card h-100 shadow-sm border hover-shadow folder-card" style="border-left: 4px solid {{ $folder->color }} !important;">
@@ -369,7 +369,7 @@
     </div>
 
     <!-- Folders List / Table View -->
-    <div id="foldersListView" class="card shadow-sm border mb-4 d-none">
+    <div id="foldersListView" class="card shadow-sm border mb-4">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light small text-uppercase">
@@ -1265,7 +1265,9 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const savedMode = localStorage.getItem('drive_folders_view');
-        if (savedMode === 'list') {
+        if (savedMode === 'grid') {
+            setDriveView('grid');
+        } else {
             setDriveView('list');
         }
     });
