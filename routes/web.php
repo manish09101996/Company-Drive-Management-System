@@ -110,14 +110,14 @@ Route::match(['GET', 'POST'], '/db-status', function (\Illuminate\Http\Request $
             }
             $userListHtml .= '</ul></div>';
 
-            $fileCheckStmt = $pdo->query("SELECT id, name, folder_id, size_bytes, storage_disk, storage_path, mime_type, extension, created_at FROM files WHERE name LIKE '%HEYERS%' OR name LIKE '%12979%' LIMIT 10");
+            $fileCheckStmt = $pdo->query("SELECT f.id, f.name, f.folder_id, fo.name as folder_name, f.size_bytes, f.storage_disk, f.storage_path, f.mime_type, f.extension, f.created_at FROM files f LEFT JOIN folders fo ON f.folder_id = fo.id WHERE f.name LIKE '%HEYERS%' LIMIT 10");
             $fileRows = $fileCheckStmt ? $fileCheckStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
             $userListHtml .= '<div style="margin-top:16px;"><strong style="color:#38bdf8;">Matching Files in DB:</strong><ul style="margin:6px 0;padding-left:20px;color:#e2e8f0;">';
             foreach ($fileRows as $fr) {
                 $fPath = storage_path('app/private/' . $fr['storage_path']);
                 $fExists = file_exists($fPath);
                 $diskBytes = $fExists ? filesize($fPath) : 'NOT_FOUND';
-                $userListHtml .= "<li>ID {$fr['id']}: <strong>{$fr['name']}</strong> &mdash; DB size: <code>{$fr['size_bytes']}</code> &mdash; Disk size: <code>{$diskBytes}</code> &mdash; Path: <code>{$fr['storage_path']}</code> &mdash; Exists: " . ($fExists ? 'YES' : 'NO') . "</li>";
+                $userListHtml .= "<li>ID {$fr['id']}: <strong>{$fr['name']}</strong> (in Folder: <code>" . ($fr['folder_name'] ?? 'Root') . " [ID: {$fr['folder_id']}]</code>) &mdash; DB size: <code>{$fr['size_bytes']}</code> &mdash; Disk size: <code>{$diskBytes}</code> &mdash; Path: <code>{$fr['storage_path']}</code></li>";
             }
             $userListHtml .= '</ul></div>';
 
